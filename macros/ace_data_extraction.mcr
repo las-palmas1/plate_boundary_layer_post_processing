@@ -1,0 +1,283 @@
+#!MC 1410
+$!VarSet |MFBD| = 'C:\Program Files\Tecplot\Tecplot 360 EX 2016 R2'
+$!READDATASET  'data_files\ace\average_grid_density_sp_al.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\average_grid_density_sp_al_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\average_grid_density_sp_al_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\average_grid_density_sp_al_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\high_density_k_eps_two_layer_model.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_density_k_eps_two_layer_model_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_density_k_eps_two_layer_model_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_density_k_eps_two_layer_model_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\high_grid_density_k_eps.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_grid_density_k_eps_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_grid_density_k_eps_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_grid_density_k_eps_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\high_grid_density_sp_al.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_grid_density_sp_al_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_grid_density_sp_al_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\high_grid_density_sp_al_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\very_high_density_k_eps.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\very_high_density_k_eps_farfield.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_farfield_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_farfield_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_farfield_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\very_high_density_k_eps_two_layer_model_farfield.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_two_layer_model_farfield_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_two_layer_model_farfield_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_k_eps_two_layer_model_farfield_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\very_high_density_sp_al.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_sp_al_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_sp_al_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_sp_al_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!READDATASET  'data_files\ace\very_high_density_sp_al_farfield.plt'
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_sp_al_farfield_line_0.dat'
+NUMPTS = 1500
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.35
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_sp_al_farfield_line_1.dat'
+NUMPTS = 3000
+RAWDATA
+2
+7.9 0.15 0
+7.9 0.15 0.003
+$!EXTRACTFROMPOLYLINE
+EXTRACTLINEPOINTSONLY = NO
+EXTRACTTHROUGHVOLUME = YES
+EXTRACTTOFILE = YES
+FNAME = 'extracted_data\ace\very_high_density_sp_al_farfield_line_2.dat'
+NUMPTS = 2000
+RAWDATA
+2
+0 0.15 0
+8 0.15 0
+$!RemoveVar |MFBD|
+$!Quit
