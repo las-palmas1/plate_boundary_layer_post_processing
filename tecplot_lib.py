@@ -28,8 +28,8 @@ def wrap_macro(macro_body: str) -> str:
     return result
 
 
-def get_extract_from_polyline_command(polyline: PolyLine,
-                                      filename) -> str:
+def _get_extract_from_polyline_command(polyline: PolyLine,
+                                       filename) -> str:
     result = "$!EXTRACTFROMPOLYLINE\n" \
            "EXTRACTLINEPOINTSONLY = NO\n" \
            "EXTRACTTHROUGHVOLUME = YES\n" \
@@ -54,13 +54,20 @@ def get_open_layout_command(filename) -> str:
     return result
 
 
-def get_data_file_extraction_macro_body(filename, polylines: typing.List[PolyLine], output_dir) -> str:
+def get_save_layout_command(layout_name) -> str:
+    result = "$!SAVELAYOUT  '%s'\n" \
+             "  INCLUDEDATA = YES\n" \
+             "  INCLUDEPREVIEW = NO\n" % layout_name
+    return result
+
+
+def _get_data_file_extraction_macro_body(filename, polylines: typing.List[PolyLine], output_dir) -> str:
     s1 = get_open_data_file_command(filename)
     s2 = ''
     output_filename_template = os.path.splitext(os.path.split(filename)[1])[0] + '_line_%s.dat'
     for n, polyline in enumerate(polylines):
-        s2 += '%s' % (get_extract_from_polyline_command(polyline,
-                                                        os.path.join(output_dir, output_filename_template) % n))
+        s2 += '%s' % (_get_extract_from_polyline_command(polyline,
+                                                         os.path.join(output_dir, output_filename_template) % n))
     return s1 + s2
 
 
@@ -81,7 +88,7 @@ class LineDataExtractor:
     """
     def __init__(self, datafiles_dir, output_dir, polylines_list: typing.List[typing.List[PolyLine]], macro_name):
         """
-        :param datafiles_dir: Имя директории, в которой располагаются .plt файлы
+        :param datafiles_dir: Имя директории, в которой располагаются .plt или файлы
         :param output_dir: Имя директории для извлеченных данных
         :param polylines_list: список полилиний, по которым будут извелкаться данные
         :param macro_name: имя макроса, под которым он будет сохранен
@@ -97,8 +104,9 @@ class LineDataExtractor:
                                                                 'must be same'
         macros_body = ''
         for n, filename in enumerate(data_filenames):
-            macros_body += '%s' % get_data_file_extraction_macro_body(os.path.join(self.datafiles_dir, filename),
-                                                                      self.polylines_list[n], self.output_dir)
+            if os.path.splitext(filename)[1] == '.plt':
+                macros_body += '%s' % _get_data_file_extraction_macro_body(os.path.join(self.datafiles_dir, filename),
+                                                                           self.polylines_list[n], self.output_dir)
         return wrap_macro(macros_body)
 
     def run_extraction(self):
@@ -207,7 +215,7 @@ class SliceType(enum.Enum):
     ARBITRARY = 6
 
 
-def get_slice_setting_macro(slice_type: SliceType, position: tuple, **kwargs) -> str:
+def _get_slice_setting_macro(slice_type: SliceType, position: tuple, **kwargs) -> str:
     position_template = '%s = %s %s = %s %s = %s'
     primary_position = ''
     if slice_type == SliceType.XPLANES or slice_type == SliceType.YPLANES or slice_type == SliceType.ZPLANES or \
@@ -229,16 +237,31 @@ def get_slice_setting_macro(slice_type: SliceType, position: tuple, **kwargs) ->
     return result
 
 
-class Variable(enum.Enum):
-    X = 1
-    Y = 2
-    Z = 3
+class DataType(enum.Enum):
+    SINGLE = 0
+    SHORTINT = 1
+    DOUBLE = 2
+    BYTE = 3
+    LONGINT = 4
+    BIT = 5
 
 
-def get_go_to_2d_macro(x_axis_var: Variable, y_axis_var: Variable, rect: tuple = (10, 10, 90, 90), **kwargs) -> str:
+def get_alterdata_command(equation: str, ignored_divided_by_zero=False, data_type: DataType = DataType.SINGLE) -> str:
+    template = "$!ALTERDATA\n" \
+               "  EQUATION = '%s'\n" \
+               "  IGNOREDIVIDEBYZERO = %s\n" \
+               "  DATATYPE = %s\n"
+    if ignored_divided_by_zero:
+        result = template % (equation, 'YES', data_type.name)
+    else:
+        result = template % (equation, 'NO', data_type.name)
+    return result
+
+
+def _get_go_to_2d_macro(x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10, 90, 90), **kwargs) -> str:
     """
-    :param x_axis_var:
-    :param y_axis_var:
+    :param x_axis_var: номер переменной, откладываемой по горизонтальной оси
+    :param y_axis_var: номер переменной, откладываемой по вертикальной оси
     :param rect: определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
         по умолчанию rect=(10, 10, 90, 90)
     :param kwargs: xlim, ylim (интервалы по осям x и y соотвественно), тип tuple; пример: xlim=(0,1), ylim=(1,2)
@@ -257,7 +280,7 @@ def get_go_to_2d_macro(x_axis_var: Variable, y_axis_var: Variable, rect: tuple =
               "      X2 = %s\n" \
               "      Y2 = %s\n" \
               "    }\n" \
-              "  }\n" % (x_axis_var.value, y_axis_var.value, rect[0], rect[1], rect[2], rect[3])
+              "  }\n" % (x_axis_var, y_axis_var, rect[0], rect[1], rect[2], rect[3])
     if 'xlim' in kwargs and 'ylim' in kwargs:
         string2 = "$!TWODAXIS\n" \
                   "  XDETAIL\n" \
@@ -276,8 +299,73 @@ def get_go_to_2d_macro(x_axis_var: Variable, y_axis_var: Variable, rect: tuple =
     return result
 
 
-def get_var_and_levels_setting_macro(variable_number: int, min_level, max_level,
-                                     num_levels: int) -> str:
+class Font:
+    def __init__(self, font_family='Helvetica', is_bold=False, is_italic=False, height=3.):
+        self.font_family = font_family
+        if is_bold:
+            self.is_bold = 'YES'
+        else:
+            self.is_bold = 'NO'
+        if is_italic:
+            self.is_italic = 'YES'
+        else:
+            self.is_italic = 'NO'
+        self.height = height
+
+
+def _get_legend_font_settings(header_font: Font = Font(), number_font: Font = Font()) -> str:
+    header_settings = "$!GLOBALCONTOUR 1  LEGEND{HEADERTEXTSHAPE{FONTFAMILY = '%s'}}\n" \
+                      "$!GLOBALCONTOUR 1  LEGEND{HEADERTEXTSHAPE{HEIGHT = %s}}\n" \
+                      "$!GLOBALCONTOUR 1  LEGEND{HEADERTEXTSHAPE{ISITALIC = %s}}\n" \
+                      "$!GLOBALCONTOUR 1  LEGEND{HEADERTEXTSHAPE{ISBOLD = %s}}\n" % (header_font.font_family,
+                                                                                     header_font.height,
+                                                                                     header_font.is_italic,
+                                                                                     header_font.is_bold)
+    number_settings = "$!GLOBALCONTOUR 1  LEGEND{NUMBERTEXTSHAPE{FONTFAMILY = '%s'}}\n" \
+                      "$!GLOBALCONTOUR 1  LEGEND{NUMBERTEXTSHAPE{HEIGHT = %s}}\n" \
+                      "$!GLOBALCONTOUR 1  LEGEND{NUMBERTEXTSHAPE{ISITALIC = %s}}\n" \
+                      "$!GLOBALCONTOUR 1  LEGEND{NUMBERTEXTSHAPE{ISBOLD = %s}}\n" % (number_font.font_family,
+                                                                                     number_font.height,
+                                                                                     number_font.is_italic,
+                                                                                     number_font.is_bold)
+    result = header_settings + number_settings
+    return result
+
+
+def _get_axis_font_settings(x_title_font: Font = Font(), x_label_font: Font = Font(), x_title_offset=5,
+                            y_title_font: Font = Font(), y_label_font: Font = Font(), y_title_offset=5) -> str:
+    x_title = "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{FONTFAMILY = '%s'}}}\n" \
+              "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{HEIGHT =%s}}}\n" \
+              "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{ISITALIC = %s}}}\n" \
+              "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{ISBOLD = %s}}}\n" \
+              "$!TWODAXIS XDETAIL{TITLE{OFFSET = %s}}\n" % (x_title_font.font_family, x_title_font.height,
+                                                            x_title_font.is_italic, x_title_font.is_bold,
+                                                            x_title_offset)
+    x_label = "$!TWODAXIS XDETAIL{TICKLABEL{TEXTSHAPE{FONTFAMILY = '%s'}}}\n" \
+              "$!TWODAXIS XDETAIL{TICKLABEL{TEXTSHAPE{HEIGHT =%s}}}\n" \
+              "$!TWODAXIS XDETAIL{TICKLABEL{TEXTSHAPE{ISITALIC = %s}}}\n" \
+              "$!TWODAXIS XDETAIL{TICKLABEL{TEXTSHAPE{ISBOLD = %s}}}\n" % (x_label_font.font_family,
+                                                                           x_label_font.height, x_label_font.is_italic,
+                                                                           x_label_font.is_bold)
+    y_title = "$!TWODAXIS YDETAIL{TITLE{TEXTSHAPE{FONTFAMILY = '%s'}}}\n" \
+              "$!TWODAXIS YDETAIL{TITLE{TEXTSHAPE{HEIGHT =%s}}}\n" \
+              "$!TWODAXIS YDETAIL{TITLE{TEXTSHAPE{ISITALIC = %s}}}\n" \
+              "$!TWODAXIS YDETAIL{TITLE{TEXTSHAPE{ISBOLD = %s}}}\n" \
+              "$!TWODAXIS YDETAIL{TITLE{OFFSET = %s}}\n" % (y_title_font.font_family, y_title_font.height,
+                                                            y_title_font.is_italic, y_title_font.is_bold,
+                                                            y_title_offset)
+    y_label = "$!TWODAXIS YDETAIL{TICKLABEL{TEXTSHAPE{FONTFAMILY = '%s'}}}\n" \
+              "$!TWODAXIS YDETAIL{TICKLABEL{TEXTSHAPE{HEIGHT =%s}}}\n" \
+              "$!TWODAXIS YDETAIL{TICKLABEL{TEXTSHAPE{ISITALIC = %s}}}\n" \
+              "$!TWODAXIS YDETAIL{TICKLABEL{TEXTSHAPE{ISBOLD = %s}}}\n" % (y_label_font.font_family,
+                                                                           y_label_font.height, y_label_font.is_italic,
+                                                                           y_label_font.is_bold)
+    result = x_title + x_label + y_title + y_label
+    return result
+
+
+def _get_levels_setting_macro(variable_number: int, min_level, max_level,
+                              num_levels: int) -> str:
     levels = np.linspace(min_level, max_level, num_levels)
     result = "$!SETCONTOURVAR\n" \
              "  VAR = %s\n" \
@@ -292,8 +380,8 @@ def get_var_and_levels_setting_macro(variable_number: int, min_level, max_level,
     return result
 
 
-def get_legend_settings_macro(xy_position: tuple = (95, 80), rowspacing: float = 1.2, auto_levelskip: int = 1,
-                              isvertical: bool = True) -> str:
+def _get_legend_settings_macro(xy_position: tuple = (95, 80), rowspacing: float = 1.2, auto_levelskip: int = 1,
+                               isvertical: bool = True) -> str:
     if isvertical:
         isvertical_str = 'YES'
     else:
@@ -326,8 +414,8 @@ class ColorMap(enum.Enum):
     GRAY_SCALE = "GrayScale"
 
 
-def get_colormap_settings_macro(color_distribution: ColorDistribution = ColorDistribution.BANDED,
-                                colormap_name: ColorMap = ColorMap.MODERN, **kwargs) -> str:
+def _get_colormap_settings_macro(color_distribution: ColorDistribution = ColorDistribution.BANDED,
+                                 colormap_name: ColorMap = ColorMap.MODERN, **kwargs) -> str:
     """
     :param color_distribution:
     :param colormap_name:
@@ -347,11 +435,11 @@ def get_colormap_settings_macro(color_distribution: ColorDistribution = ColorDis
     return result
 
 
-def get_extract_slice_command() -> str:
+def _get_extract_slice_command() -> str:
     return "$!CREATESLICEZONES\n"
 
 
-def get_activate_zones_command(zone_number_list: typing.List[int]) -> str:
+def _get_activate_zones_command(zone_number_list: typing.List[int]) -> str:
     zones = ''
     for n, i in enumerate(zone_number_list):
         if n != len(zone_number_list) - 1:
@@ -362,7 +450,7 @@ def get_activate_zones_command(zone_number_list: typing.List[int]) -> str:
     return result
 
 
-def get_export_command(exportfname, imagewidth=1200) -> str:
+def _get_export_command(exportfname, imagewidth=1200) -> str:
     result = "$!EXPORTSETUP EXPORTFNAME = '%s'\n" \
              "$!EXPORTSETUP IMAGEWIDTH = %s\n" \
              "$!EXPORT\n" \
@@ -370,7 +458,7 @@ def get_export_command(exportfname, imagewidth=1200) -> str:
     return result
 
 
-def get_delete_zones_command(zone_number_list: typing.List[int]) -> str:
+def _get_delete_zones_command(zone_number_list: typing.List[int]) -> str:
     zones = ''
     for n, i in enumerate(zone_number_list):
         if n != len(zone_number_list) - 1:
@@ -381,38 +469,12 @@ def get_delete_zones_command(zone_number_list: typing.List[int]) -> str:
     return result
 
 
-def get_show_contour_command() -> str:
+def _get_show_contour_command() -> str:
     return "$!FIELDLAYERS SHOWCONTOUR = YES\n"
 
 
-def get_go_to_3d_command() -> str:
+def _get_go_to_3d_command() -> str:
     return "$!PLOTTYPE = CARTESIAN3D\n"
-
-
-def get_create_picture_macro(x_axis_var: Variable, y_axis_var: Variable, zone_number: int,
-                             exportfname, rect: tuple = (10, 10, 90, 90), imagewidth=1200, **kwargs) -> str:
-    """
-    :param x_axis_var: величина по горизонтальной оси
-    :param y_axis_var: величина по вертикальной оси
-    :param zone_number: номер зоны, подлежащей активации и удалению
-    :param rect: определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
-        по умолчанию rect=(10, 10, 90, 90)
-    :param exportfname: имя файла, в который будет осуществляться эскпорт
-    :param imagewidth: ширина картинки
-    :param kwargs: xlim и ylim (интервалы по осям x и y соотвественно), тип tuple; пример: xlim=(0,1), ylim=(1,2)
-    :return: макрос, который извлекает данные из текущего среза, активирует отображение цвета, переходит в
-        2d координаты, с заданными величинами по горизонтальной и вертикальной оси, активирует зону,
-        осуществляет экспорт, удаляет зону и переходит обратно в 3d координаты
-    """
-    extract_slice = get_extract_slice_command()
-    show_contour = get_show_contour_command()
-    go_to_2d = get_go_to_2d_macro(x_axis_var, y_axis_var, rect, **kwargs)
-    activate_zone = get_activate_zones_command([zone_number])
-    export = get_export_command(exportfname, imagewidth)
-    delete_zone = get_delete_zones_command([zone_number])
-    go_to_3d = get_go_to_3d_command()
-    result = extract_slice + show_contour + go_to_2d + activate_zone + export + delete_zone + go_to_3d
-    return result
 
 
 class SliceSettings:
@@ -445,17 +507,21 @@ class LevelSettings:
 
 class LegendSettings:
     def __init__(self, xy_position: tuple = (95, 80), rowspacing: float = 1.2, auto_levelskip: int = 1,
-                 isvertical: bool = True):
+                 isvertical: bool = True, header_font: Font = Font(), number_font: Font = Font()):
         """
         :param xy_position: позиция легенды в координатах экрана, по умолчанию (95, 80)
         :param rowspacing: интервал между строками, по умолчанию 1.2
         :param auto_levelskip: пропуск уровней, по умолчанию 1 (без пропуска)
         :param isvertical: параметр, определяющей вертикальность легенды, по умолчанию True
+        :param header_font: экземпляр класса Font, содержащий настройки шрифта для заголовка легенды
+        :param number_font: экземпляр класса Font, содержащий настройки шрифта для лэйблов легенды
         """
         self.xy_position = xy_position
         self.rowspacing = rowspacing
         self.auto_levelskip = auto_levelskip
         self.isvertical = isvertical
+        self.header_font = header_font
+        self.number_font = number_font
 
 
 class ColormapSettings:
@@ -472,17 +538,32 @@ class ColormapSettings:
 
 
 class AxisSettings:
-    def __init__(self, x_axis_var: Variable, y_axis_var: Variable, rect: tuple = (10, 10, 90, 90), **kwargs):
+    def __init__(self, x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10, 90, 90),
+                 x_title_font: Font = Font(), x_label_font: Font = Font(), x_title_offset=5,
+                 y_title_font: Font = Font(), y_label_font: Font = Font(), y_title_offset=5,
+                 **kwargs):
         """
-        :param x_axis_var: переменная, откладываемая по горизонтальной оси, например, x_axis_var = Variable.X
-        :param y_axis_var: переменная, откладываемая по вертикальной оси
+        :param x_axis_var: номер переменной, откладываемая по горизонтальной оси, например, x_axis_var = 0
+        :param y_axis_var: номер переменной, откладываемая по вертикальной оси
         :param rect: определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
             по умолчанию rect=(10, 10, 90, 90)
+        :param x_title_font: экземпляр класса Font, содержащий настройки шрифта для заголовка оси x
+        :param x_label_font: экземпляр класса Font, содержащий настройки шрифта для лэйблов оси x
+        :param x_title_offset: сдвиг заголовка оси x относсительно оси
+        :param y_title_font: экземпляр класса Font, содержащий настройки шрифта для заголовка оси y
+        :param y_label_font: экземпляр класса Font, содержащий настройки шрифта для лэйблов оси y
+        :param y_title_offset: сдвиг заголовка оси y относсительно оси
         :param kwargs: xlim и ylim (интервалы по осям x и y соотвественно), тип tuple; пример: xlim=(0,1), ylim=(1,2)
         """
         self.x_axis_var = x_axis_var
         self.y_axis_var = y_axis_var
         self.rect = rect
+        self.x_title_font = x_title_font
+        self.x_label_font = x_label_font
+        self.x_title_offset = x_title_offset
+        self.y_title_font = y_title_font
+        self.y_label_font = y_label_font
+        self.y_title_offset = y_title_offset
         self.kwargs = kwargs
 
 
@@ -499,11 +580,29 @@ class ExportSettings:
         self.imagewidth = imagewidth
 
 
+def _get_create_picture_macro(axis_settings: AxisSettings, export_settings: ExportSettings) -> str:
+
+    extract_slice = _get_extract_slice_command()
+    show_contour = _get_show_contour_command()
+    go_to_2d = _get_go_to_2d_macro(axis_settings.x_axis_var, axis_settings.y_axis_var, axis_settings.rect,
+                                   **axis_settings.kwargs)
+    axis_font_settings = _get_axis_font_settings(axis_settings.x_title_font, axis_settings.x_label_font,
+                                                 axis_settings.x_title_offset, axis_settings.y_title_font,
+                                                 axis_settings.y_label_font, axis_settings.y_title_offset)
+    activate_zone = _get_activate_zones_command([export_settings.zone_number])
+    export = _get_export_command(export_settings.exportfname, export_settings.imagewidth)
+    delete_zone = _get_delete_zones_command([export_settings.zone_number])
+    go_to_3d = _get_go_to_3d_command()
+    result = extract_slice + show_contour + go_to_2d + axis_font_settings + activate_zone + export + \
+             delete_zone + go_to_3d
+    return result
+
+
 class PictureCreator:
-    def __init__(self, data_filename, macro_filename, slice_settings: SliceSettings, level_settings: LevelSettings,
+    def __init__(self, file_for_pictures, macro_filename, slice_settings: SliceSettings, level_settings: LevelSettings,
                  legend_settings: LegendSettings, colormap_settings: ColormapSettings,
                  axis_settings: AxisSettings, export_settings: ExportSettings):
-        self.data_filename = data_filename
+        self.file_for_pictures = file_for_pictures
         self.macro_filename = macro_filename
         self.slice_settings = slice_settings
         self.level_settings = level_settings
@@ -513,40 +612,42 @@ class PictureCreator:
         self.export_settings = export_settings
 
     def _get_slice_settings_macro(self) -> str:
-        return get_slice_setting_macro(self.slice_settings.slice_type, self.slice_settings.position,
-                                       **self.slice_settings.kwargs)
+        return _get_slice_setting_macro(self.slice_settings.slice_type, self.slice_settings.position,
+                                        **self.slice_settings.kwargs)
 
     def _get_level_settings_macro(self) -> str:
-        return get_var_and_levels_setting_macro(self.level_settings.variable_number, self.level_settings.min_level,
-                                                self.level_settings.max_level, self.level_settings.num_levels)
+        return _get_levels_setting_macro(self.level_settings.variable_number, self.level_settings.min_level,
+                                         self.level_settings.max_level, self.level_settings.num_levels)
 
     def _get_legend_settings_macro(self) -> str:
-        return get_legend_settings_macro(self.legend_settings.xy_position, self.legend_settings.rowspacing,
-                                         self.legend_settings.auto_levelskip, self.legend_settings.isvertical)
+        return _get_legend_settings_macro(self.legend_settings.xy_position, self.legend_settings.rowspacing,
+                                          self.legend_settings.auto_levelskip, self.legend_settings.isvertical)
 
     def _get_colormap_settings_macro(self) -> str:
-        return get_colormap_settings_macro(self.colormap_settings.color_distribution,
-                                           self.colormap_settings.colormap_name, **self.colormap_settings.kwargs)
+        return _get_colormap_settings_macro(self.colormap_settings.color_distribution,
+                                            self.colormap_settings.colormap_name, **self.colormap_settings.kwargs)
 
     def _get_create_picture_macro(self):
-        return get_create_picture_macro(self.axis_settings.x_axis_var,
-                                        self.axis_settings.y_axis_var,
-                                        self.export_settings.zone_number,
-                                        self.export_settings.exportfname,
-                                        self.axis_settings.rect,
-                                        self.export_settings.imagewidth, **self.axis_settings.kwargs)
+        return _get_create_picture_macro(self.axis_settings, self.export_settings)
+
+    def _get_legend_font_settings(self):
+        return _get_legend_font_settings(self.legend_settings.header_font, self.legend_settings.number_font)
 
     def run_creation(self):
-        open_file = get_open_data_file_command(self.data_filename)
+        if os.path.splitext(self.file_for_pictures)[1] == '.plt':
+            open_file = get_open_data_file_command(self.file_for_pictures)
+        else:
+            open_file = get_open_layout_command(self.file_for_pictures)
         slice_settings = self._get_slice_settings_macro()
         level_settings = self._get_level_settings_macro()
         legend_settings = self._get_legend_settings_macro()
+        legend_font_setting = self._get_legend_font_settings()
         colormap_settings = self._get_colormap_settings_macro()
         create_picture = self._get_create_picture_macro()
-        macro = wrap_macro(open_file + slice_settings + level_settings + legend_settings + colormap_settings +
-                           create_picture)
+        macro = wrap_macro(open_file + slice_settings + level_settings + legend_settings + legend_font_setting +
+                           colormap_settings + create_picture)
         create_macro_file(macro, self.macro_filename)
-        execute_macro(self.macro_filename)
+        # execute_macro(self.macro_filename)
 
 
 if __name__ == '__main__':
@@ -554,7 +655,7 @@ if __name__ == '__main__':
     legend_settings = LegendSettings(xy_position=(90, 45))
     levels_settings = LevelSettings(5, 0, 90, 10)
     colormap_settings = ColormapSettings(ColorDistribution.BANDED, ColorMap.MODERN)
-    axis_settings = AxisSettings(Variable.X, Variable.Z, rect=(10, 10, 80, 40),
+    axis_settings = AxisSettings(0, 3, rect=(10, 10, 80, 40),
                                  xlim=(-0.1, 8.1), ylim=(-0.05, 0.4))
     export_settings = ExportSettings(2, r'pictures\test.png')
     pic_creator = PictureCreator(r'data_files\average_grid_density_sp_al.plt', 'macros\picture_creation.mcr',
