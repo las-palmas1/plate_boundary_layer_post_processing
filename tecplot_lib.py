@@ -88,10 +88,14 @@ class LineDataExtractor:
     """
     def __init__(self, datafiles_dir, output_dir, polylines_list: typing.List[typing.List[PolyLine]], macro_name):
         """
-        :param datafiles_dir: Имя директории, в которой располагаются .plt или файлы
-        :param output_dir: Имя директории для извлеченных данных
-        :param polylines_list: список полилиний, по которым будут извелкаться данные
-        :param macro_name: имя макроса, под которым он будет сохранен
+        :param datafiles_dir: str \n
+            Имя директории, в которой располагаются .plt или файлы
+        :param output_dir: str \n
+            Имя директории для извлеченных данных
+        :param polylines_list: List[List[PolyLine]] \n
+            список полилиний, по которым будут извелкаться данные
+        :param macro_name: str \n
+            имя макроса, под которым он будет сохранен
         """
         self.datafiles_dir = datafiles_dir
         self.output_dir = output_dir
@@ -123,7 +127,8 @@ class LineDataFileLoader:
     """
     def __init__(self, data_dirname: str):
         """
-        :param data_dirname: имя папки, содержащей файлы с извлеченными данными
+        :param data_dirname: str \n
+            имя папки, содержащей файлы с извлеченными данными
         """
         self.data_dirname = data_dirname
         self.frames: typing.List[pd.DataFrame] = []
@@ -258,19 +263,29 @@ def get_alterdata_command(equation: str, ignored_divided_by_zero=False, data_typ
     return result
 
 
-def _get_go_to_2d_macro(x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10, 90, 90), **kwargs) -> str:
+def _get_go_to_2d_macro(x_axis_var: int, y_axis_var: int, x_line_pos: float=0., y_line_pos: float=0.,
+                        rect: tuple = (10, 10, 90, 90), preserve_axis_length: bool = False, **kwargs) -> str:
     """
-    :param x_axis_var: номер переменной, откладываемой по горизонтальной оси
-    :param y_axis_var: номер переменной, откладываемой по вертикальной оси
-    :param rect: определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
+    :param x_axis_var: int \n
+        Номер переменной, откладываемой по горизонтальной оси
+    :param x_line_pos: float \n
+        Позиция горизонтальной оси по вертикали
+    :param y_line_pos: float \n
+        Позиция вертикальной оси по горизонтали \n
+    :param y_axis_var: int \n
+        Номер переменной, откладываемой по вертикальной оси
+    :param rect: tuple, optional \n
+        Определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
         по умолчанию rect=(10, 10, 90, 90)
+    :param preserve_axis_length: bool, optional \n
+        Сохраняемость масштаба осей при изменении их диапазона
     :param kwargs: xlim, ylim (интервалы по осям x и y соотвественно), тип tuple; пример: xlim=(0,1), ylim=(1,2)
     :return:
     """
     string1 = "$!PLOTTYPE = CARTESIAN2D\n" \
               "$!TWODAXIS XDETAIL{VARNUM = %s}\n" \
-              "$!TWODAXIS YDETAIL{VARNUM = %s}\n" \
-              "$!TWODAXIS\n" \
+              "$!TWODAXIS YDETAIL{VARNUM = %s}\n" % (x_axis_var, y_axis_var)
+    string3 = "$!TWODAXIS\n" \
               "  GRIDAREA\n" \
               "  {\n" \
               "    EXTENTS\n" \
@@ -280,9 +295,13 @@ def _get_go_to_2d_macro(x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10,
               "      X2 = %s\n" \
               "      Y2 = %s\n" \
               "    }\n" \
-              "  }\n" % (x_axis_var, y_axis_var, rect[0], rect[1], rect[2], rect[3])
+              "  }\n" \
+              "$!TWODAXIS XDETAIL{AXISLINE{POSITION = %s}}\n" \
+              "$!TWODAXIS YDETAIL{AXISLINE{POSITION = %s}}\n" % (rect[0], rect[1], rect[2], rect[3],
+                                                                 x_line_pos, y_line_pos)
     if 'xlim' in kwargs and 'ylim' in kwargs:
         string2 = "$!TWODAXIS\n" \
+                  "  PRESERVEAXISSCALE = %s\n" \
                   "  XDETAIL\n" \
                   "    {\n"\
                   "    RANGEMIN = %s\n" \
@@ -292,10 +311,11 @@ def _get_go_to_2d_macro(x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10,
                   "    {\n" \
                   "    RANGEMIN = %s\n" \
                   "    RANGEMAX = %s\n" \
-                  "    }\n" % (kwargs['xlim'][0], kwargs['xlim'][1], kwargs['ylim'][0], kwargs['ylim'][1])
+                  "    }\n" % ((not preserve_axis_length).__str__().upper(), kwargs['xlim'][0], kwargs['xlim'][1],
+                               kwargs['ylim'][0], kwargs['ylim'][1])
     else:
         string2 = ''
-    result = string1 + string2
+    result = string1 + string2 + string3
     return result
 
 
@@ -332,8 +352,8 @@ def _get_legend_font_settings(header_font: Font = Font(), number_font: Font = Fo
     return result
 
 
-def _get_axis_font_settings(x_title_font: Font = Font(), x_label_font: Font = Font(), x_title_offset=5,
-                            y_title_font: Font = Font(), y_label_font: Font = Font(), y_title_offset=5) -> str:
+def _get_axis_font_settings(x_title_font: Font = Font(), x_label_font: Font = Font(), x_title_offset=5.,
+                            y_title_font: Font = Font(), y_label_font: Font = Font(), y_title_offset=5.) -> str:
     x_title = "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{FONTFAMILY = '%s'}}}\n" \
               "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{HEIGHT =%s}}}\n" \
               "$!TWODAXIS XDETAIL{TITLE{TEXTSHAPE{ISITALIC = %s}}}\n" \
@@ -477,11 +497,31 @@ def _get_go_to_3d_command() -> str:
     return "$!PLOTTYPE = CARTESIAN3D\n"
 
 
+def _get_frame_size_commands(width: float, height: float):
+    result = "$!FRAMELAYOUT HEIGHT = %s\n" \
+             "$!FRAMELAYOUT WIDTH = %s\n" % (height, width)
+    return result
+
+
+class FrameSettings:
+    def __init__(self, width: float=9, height: float=8):
+        """
+        :param width:  float, optional \n
+            Ширина фрейма
+        :param height: float, optional \n
+            Высота фрейма
+        """
+        self.width = width
+        self.height = height
+
+
 class SliceSettings:
     def __init__(self, slice_type: SliceType, position: tuple, **kwargs):
         """
-        :param slice_type: определяет ориентацию секущей плоскости
-        :param position: кортеж из трех элементов, определяющих координаты точки, черех которую 
+        :param slice_type: SliceType \n
+            определяет ориентацию секущей плоскости
+        :param position: tuple \n
+            кортеж из трех элементов, определяющих координаты точки, черех которую 
             проходит секущая плоскость
         :param kwargs: 1. normal - кортеж, задающий координаты нормали к секущей плоскости, необходимо задать, если
                 slice_type = SliceType.ARBITRARY
@@ -494,10 +534,14 @@ class SliceSettings:
 class LevelSettings:
     def __init__(self, variable_number: int, min_level, max_level, num_levels: int):
         """
-        :param variable_number: номер отображаемой переменной переменной
-        :param min_level: нижняя граница отображаемого интервала значений переменной
-        :param max_level: верхняя граница отображаемого интервала значений переменной
-        :param num_levels: число уровней в легенде
+        :param variable_number: int \n
+            номер отображаемой переменной переменной
+        :param min_level: float \n
+            нижняя граница отображаемого интервала значений переменной
+        :param max_level: float \n
+            верхняя граница отображаемого интервала значений переменной
+        :param num_levels: int \
+            число уровней в легенде
         """
         self.variable_number = variable_number
         self.min_level = min_level
@@ -509,12 +553,18 @@ class LegendSettings:
     def __init__(self, xy_position: tuple = (95, 80), rowspacing: float = 1.2, auto_levelskip: int = 1,
                  isvertical: bool = True, header_font: Font = Font(), number_font: Font = Font()):
         """
-        :param xy_position: позиция легенды в координатах экрана, по умолчанию (95, 80)
-        :param rowspacing: интервал между строками, по умолчанию 1.2
-        :param auto_levelskip: пропуск уровней, по умолчанию 1 (без пропуска)
-        :param isvertical: параметр, определяющей вертикальность легенды, по умолчанию True
-        :param header_font: экземпляр класса Font, содержащий настройки шрифта для заголовка легенды
-        :param number_font: экземпляр класса Font, содержащий настройки шрифта для лэйблов легенды
+        :param xy_position: tuple, optional \n
+            позиция легенды в координатах экрана, по умолчанию (95, 80)
+        :param rowspacing: float, optional \n
+            интервал между строками, по умолчанию 1.2
+        :param auto_levelskip: int, optional \n
+            пропуск уровней, по умолчанию 1 (без пропуска)
+        :param isvertical: bool \n
+            параметр, определяющей вертикальность легенды, по умолчанию True
+        :param header_font: Font, optional \n
+            экземпляр класса Font, содержащий настройки шрифта для заголовка легенды
+        :param number_font: Font, optional \n
+            экземпляр класса Font, содержащий настройки шрифта для лэйблов легенды
         """
         self.xy_position = xy_position
         self.rowspacing = rowspacing
@@ -528,8 +578,10 @@ class ColormapSettings:
     def __init__(self, color_distribution: ColorDistribution = ColorDistribution.BANDED,
                  colormap_name: ColorMap = ColorMap.MODERN, **kwargs):
         """
-        :param color_distribution: распределения цвета, по умолчанию ColorDistribution.BANDED
-        :param colormap_name: цветовая схема, по умолчанию ColorMap.MODERN
+        :param color_distribution:  ColorDistribution, optional \n
+            распределения цвета, по умолчанию ColorDistribution.BANDED
+        :param colormap_name: ColorMap, optional \n
+            цветовая схема, по умолчанию ColorMap.MODERN
         :param kwargs: color_max и color_min, если распределение цвета =  ColorDistribution.CONTINUOUS
         """
         self.color_distribution = color_distribution
@@ -538,26 +590,45 @@ class ColormapSettings:
 
 
 class AxisSettings:
-    def __init__(self, x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10, 90, 90),
-                 x_title_font: Font = Font(), x_label_font: Font = Font(), x_title_offset=5,
-                 y_title_font: Font = Font(), y_label_font: Font = Font(), y_title_offset=5,
+    def __init__(self, x_axis_var: int, y_axis_var: int, rect: tuple = (10, 10, 90, 90), x_line_pos: float=0,
+                 y_line_pos: float=0, preserve_axis_length: bool = False,
+                 x_title_font: Font = Font(), x_label_font: Font = Font(), x_title_offset: float=5.,
+                 y_title_font: Font = Font(), y_label_font: Font = Font(), y_title_offset: float=5.,
                  **kwargs):
         """
-        :param x_axis_var: номер переменной, откладываемая по горизонтальной оси, например, x_axis_var = 0
-        :param y_axis_var: номер переменной, откладываемая по вертикальной оси
-        :param rect: определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
+        :param x_axis_var: int \n
+            номер переменной, откладываемая по горизонтальной оси, например, x_axis_var = 0
+        :param y_axis_var: int \n
+            номер переменной, откладываемая по вертикальной оси
+        :param rect: tuple, optional \n
+            определяет положение прямоугольника сетки на frame, rect=(x1, y1, x2, y2),
             по умолчанию rect=(10, 10, 90, 90)
-        :param x_title_font: экземпляр класса Font, содержащий настройки шрифта для заголовка оси x
-        :param x_label_font: экземпляр класса Font, содержащий настройки шрифта для лэйблов оси x
-        :param x_title_offset: сдвиг заголовка оси x относсительно оси
-        :param y_title_font: экземпляр класса Font, содержащий настройки шрифта для заголовка оси y
-        :param y_label_font: экземпляр класса Font, содержащий настройки шрифта для лэйблов оси y
-        :param y_title_offset: сдвиг заголовка оси y относсительно оси
+        :param preserve_axis_length: bool, optional \n
+            Сохраняемость масштаба осей при изменении их диапазона
+        :param x_line_pos: float \n
+            Позиция горизонтальной оси по вертикали
+        :param y_line_pos: float \n
+            Позиция вертикальной оси по горизонтали \n
+        :param x_title_font: Font, optional \n
+            экземпляр класса Font, содержащий настройки шрифта для заголовка оси x
+        :param x_label_font: Font, optional \n
+            экземпляр класса Font, содержащий настройки шрифта для лэйблов оси x
+        :param x_title_offset: float, optional \n
+            сдвиг заголовка оси x относсительно оси
+        :param y_title_font: Font, optional \n
+            экземпляр класса Font, содержащий настройки шрифта для заголовка оси y
+        :param y_label_font: Font, optional \n
+            экземпляр класса Font, содержащий настройки шрифта для лэйблов оси y
+        :param y_title_offset: int, optional \n
+            сдвиг заголовка оси y относсительно оси
         :param kwargs: xlim и ylim (интервалы по осям x и y соотвественно), тип tuple; пример: xlim=(0,1), ylim=(1,2)
         """
         self.x_axis_var = x_axis_var
         self.y_axis_var = y_axis_var
         self.rect = rect
+        self.preserve_axis_scale = preserve_axis_length
+        self.x_line_pos = x_line_pos
+        self.y_line_pos = y_line_pos
         self.x_title_font = x_title_font
         self.x_label_font = x_label_font
         self.x_title_offset = x_title_offset
@@ -568,32 +639,38 @@ class AxisSettings:
 
 
 class ExportSettings:
-    def __init__(self, zone_number: int, exportfname, imagewidth=1200):
+    def __init__(self, zone_number: int, exportfname: str, imagewidth=1200):
         """
-        :param zone_number: номер зоны, в которую будут извлечены данные среза, (на единицу большего общего
+        :param zone_number: int \n
+            номер зоны, в которую будут извлечены данные среза, (на единицу большего общего
             количества зон)
-        :param exportfname:  имя файла, в который будет осуществляться экспорт
-        :param imagewidth: ширина картинки
+        :param exportfname:  str \n
+            имя файла, в который будет осуществляться экспорт
+        :param imagewidth: int, optional \n
+            ширина картинки
         """
         self.zone_number = zone_number
         self.exportfname = exportfname
         self.imagewidth = imagewidth
 
 
-def _get_create_picture_macro(axis_settings: AxisSettings, export_settings: ExportSettings) -> str:
+def _get_create_picture_macro(axis_settings: AxisSettings, export_settings: ExportSettings,
+                              frame_settings: FrameSettings) -> str:
 
     extract_slice = _get_extract_slice_command()
     show_contour = _get_show_contour_command()
-    go_to_2d = _get_go_to_2d_macro(axis_settings.x_axis_var, axis_settings.y_axis_var, axis_settings.rect,
-                                   **axis_settings.kwargs)
+    go_to_2d = _get_go_to_2d_macro(axis_settings.x_axis_var, axis_settings.y_axis_var, axis_settings.x_line_pos,
+                                   axis_settings.y_line_pos, axis_settings.rect,
+                                   axis_settings.preserve_axis_scale, **axis_settings.kwargs)
     axis_font_settings = _get_axis_font_settings(axis_settings.x_title_font, axis_settings.x_label_font,
                                                  axis_settings.x_title_offset, axis_settings.y_title_font,
                                                  axis_settings.y_label_font, axis_settings.y_title_offset)
     activate_zone = _get_activate_zones_command([export_settings.zone_number])
+    frame_size = _get_frame_size_commands(frame_settings.width, frame_settings.height)
     export = _get_export_command(export_settings.exportfname, export_settings.imagewidth)
     delete_zone = _get_delete_zones_command([export_settings.zone_number])
     go_to_3d = _get_go_to_3d_command()
-    result = extract_slice + show_contour + go_to_2d + axis_font_settings + activate_zone + export + \
+    result = extract_slice + show_contour + go_to_2d + axis_font_settings + activate_zone + frame_size + export + \
              delete_zone + go_to_3d
     return result
 
@@ -601,7 +678,7 @@ def _get_create_picture_macro(axis_settings: AxisSettings, export_settings: Expo
 class PictureCreator:
     def __init__(self, file_for_pictures, macro_filename, slice_settings: SliceSettings, level_settings: LevelSettings,
                  legend_settings: LegendSettings, colormap_settings: ColormapSettings,
-                 axis_settings: AxisSettings, export_settings: ExportSettings):
+                 axis_settings: AxisSettings, export_settings: ExportSettings, frame_settings: FrameSettings):
         self.file_for_pictures = file_for_pictures
         self.macro_filename = macro_filename
         self.slice_settings = slice_settings
@@ -610,6 +687,7 @@ class PictureCreator:
         self.colormap_settings = colormap_settings
         self.axis_settings = axis_settings
         self.export_settings = export_settings
+        self.frame_settings = frame_settings
 
     def _get_slice_settings_macro(self) -> str:
         return _get_slice_setting_macro(self.slice_settings.slice_type, self.slice_settings.position,
@@ -628,7 +706,7 @@ class PictureCreator:
                                             self.colormap_settings.colormap_name, **self.colormap_settings.kwargs)
 
     def _get_create_picture_macro(self):
-        return _get_create_picture_macro(self.axis_settings, self.export_settings)
+        return _get_create_picture_macro(self.axis_settings, self.export_settings, self.frame_settings)
 
     def _get_legend_font_settings(self):
         return _get_legend_font_settings(self.legend_settings.header_font, self.legend_settings.number_font)
@@ -647,18 +725,19 @@ class PictureCreator:
         macro = wrap_macro(open_file + slice_settings + level_settings + legend_settings + legend_font_setting +
                            colormap_settings + create_picture)
         create_macro_file(macro, self.macro_filename)
-        # execute_macro(self.macro_filename)
+        execute_macro(self.macro_filename)
 
 
 if __name__ == '__main__':
-    slice_settings = SliceSettings(SliceType.ARBITRARY, (0.1, 0.15, 0.1), normal=(0, 1, 0))
-    legend_settings = LegendSettings(xy_position=(90, 45))
-    levels_settings = LevelSettings(5, 0, 90, 10)
-    colormap_settings = ColormapSettings(ColorDistribution.BANDED, ColorMap.MODERN)
-    axis_settings = AxisSettings(0, 3, rect=(10, 10, 80, 40),
-                                 xlim=(-0.1, 8.1), ylim=(-0.05, 0.4))
-    export_settings = ExportSettings(2, r'pictures\test.png')
-    pic_creator = PictureCreator(r'data_files\average_grid_density_sp_al.plt', 'macros\picture_creation.mcr',
-                                 slice_settings, levels_settings, legend_settings, colormap_settings,
-                                 axis_settings, export_settings)
-    pic_creator.run_creation()
+    pass
+    # slice_settings = SliceSettings(SliceType.ARBITRARY, (0.1, 0.15, 0.1), normal=(0, 1, 0))
+    # legend_settings = LegendSettings(xy_position=(90, 45))
+    # levels_settings = LevelSettings(5, 0, 90, 10)
+    # colormap_settings = ColormapSettings(ColorDistribution.BANDED, ColorMap.MODERN)
+    # axis_settings = AxisSettings(0, 3, rect=(10, 10, 80, 40),
+    #                              xlim=(-0.1, 8.1), ylim=(-0.05, 0.4))
+    # export_settings = ExportSettings(2, r'pictures\test.png')
+    # pic_creator = PictureCreator(r'data_files\average_grid_density_sp_al.plt', 'macros\picture_creation.mcr',
+    #                              slice_settings, levels_settings, legend_settings, colormap_settings,
+    #                              axis_settings, export_settings)
+    # pic_creator.run_creation()
