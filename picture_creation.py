@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 cwd = os.getcwd()
-data_files_dir = os.path.join(os.path.dirname(cwd), 'boundary_layer_on_plate', 'tecplot_data_files')
+data_files_dir = os.path.join(os.path.dirname(cwd), 'boundary_layer_on_plate', 'tecplot_data_files', 'ace')
 picture_dir = os.path.join(cwd, 'pictures')
 ny = - 35 / np.sqrt(35**2 + 30**2)
 nz = 30 / np.sqrt(35**2 + 30**2)

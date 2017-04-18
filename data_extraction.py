@@ -17,7 +17,7 @@ ace_extractor = LineDataExtractor(ace_data_files_dir, ace_extracted_data_dir, [p
                                                                                pln_set1, pln_set1, pln_set1],
                                   r'macros\ace_data_extraction.mcr')
 
-cfx_extractor = LineDataExtractor(cfx_data_files_dir, cfx_extracted_data_dir, [pln_set1],
+cfx_extractor = LineDataExtractor(cfx_data_files_dir, cfx_extracted_data_dir, [pln_set1, pln_set1],
                                   r'macros\cfx_data_extraction.mcr')
 
 if __name__ == '__main__':

@@ -1,17 +1,17 @@
-from tecplot_lib import LineDataFileLoader
+from tecplot_lib import LineDataLoader
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 from scipy.optimize import fsolve
 
-
-cfx_loader = LineDataFileLoader(r'extracted_data\cfx')
+cfx_loader = LineDataLoader(r'extracted_data\cfx')
 cfx_loader.load()
 
-ace_loader = LineDataFileLoader(r'extracted_data\ace')
+ace_loader = LineDataLoader(r'extracted_data\ace')
 ace_loader.load()
 
-cfx_very_high_dens_k_eps_i1_outlet_frames = cfx_loader.frames[0:3]
+cfx_very_high_dens_k_eps_i1_outlet_frames = cfx_loader.frames[3:6]
+cfx_average_dens_k_eps_i1_outlet_frames = cfx_loader.frames[0:3]
 
 av_grid_dens_sp_al_frames = ace_loader.frames[0:3]
 high_grid_dens_k_eps_two_layer_frames = ace_loader.frames[3:6]
@@ -108,302 +108,319 @@ TAU_Hughes = get_tau(Cf_Hughes, RHO0, U0)
 
 def plot_friction_coefficient_theory():
     X = np.linspace(0, 8,  1500)
-    plt.plot(X, Cf_Schlichting, lw=1, color='red',
+    plt.plot(X, Cf_Schlichting, lw=0.7, color='red',
              label=r'$Формула\ Шлихтинга$', linestyle='--')
-    plt.plot(X, Cf_Schultz_Grunov, lw=1, color='blue',
+    plt.plot(X, Cf_Schultz_Grunov, lw=0.7, color='blue',
              label=r'$Формула\ Шульца-Грунова$', linestyle='--')
-    plt.plot(X, Cf_Prandtl, lw=1, color='green',
+    plt.plot(X, Cf_Prandtl, lw=0.7, color='green',
              label=r'$Формула\ Прандтля$', linestyle='--')
-    plt.plot(X, Cf_Hughes, lw=1, color='red',
+    plt.plot(X, Cf_Hughes, lw=0.7, color='red',
              label=r'$Формула\ Хьюза$', linestyle=':')
 
+if __name__ == '__main__':
+    for frame in ace_loader.frames:
+        if frame.ix[frame.Z == 0].__len__() == 1:
+            RHO = frame.ix[frame.Z == 0].RHO[0]
+            SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient[0]
+            Vislam = frame.ix[frame.Z == 0].Vislam[0]
+            VIS_T = frame.ix[frame.Z == 0].VIS_T[0]
+        else:
+            RHO = frame.ix[frame.Z == 0].RHO
+            SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient
+            Vislam = frame.ix[frame.Z == 0].Vislam
+            VIS_T = frame.ix[frame.Z == 0].VIS_T
+        frame['UPLUS'] = frame.U / u_ref_ace * np.sqrt(2 / SkinFrictionCoefficient)
+        frame['YPLUSPrime'] = RHO / Vislam * frame.Z * u_ref_ace * np.sqrt(SkinFrictionCoefficient / 2)
+        frame['TAU'] = 0.5 * RHO * u_ref_ace ** 2 * SkinFrictionCoefficient
 
-for frame in ace_loader.frames:
-    if frame.ix[frame.Z == 0].__len__() == 1:
-        RHO = frame.ix[frame.Z == 0].RHO[0]
-        SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient[0]
-        Vislam = frame.ix[frame.Z == 0].Vislam[0]
-        VIS_T = frame.ix[frame.Z == 0].VIS_T[0]
-    else:
-        RHO = frame.ix[frame.Z == 0].RHO
-        SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient
-        Vislam = frame.ix[frame.Z == 0].Vislam
-        VIS_T = frame.ix[frame.Z == 0].VIS_T
-    frame['UPLUS'] = frame.U / u_ref_ace * np.sqrt(2 / SkinFrictionCoefficient)
-    frame['YPLUSPrime'] = RHO / Vislam * frame.Z * u_ref_ace * np.sqrt(SkinFrictionCoefficient / 2)
-    frame['TAU'] = 0.5 * RHO * u_ref_ace ** 2 * SkinFrictionCoefficient
+    for frame in cfx_loader.frames:
+        frame['SkinFrictionCoefficient'] = 2 * frame['X Wall Shear'] / (frame.Density * u_ref_ace ** 2)
+        if frame.ix[frame.Z == 0].__len__() == 1:
+            RHO = frame.ix[frame.Z == 0].Density[0]
+            SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient[0]
+            Vislam = frame.ix[frame.Z == 0]['Dynamic Viscosity'][0]
+            VIS_T = frame.ix[frame.Z == 0]['Eddy Viscosity'][0]
+        else:
+            RHO = frame.ix[frame.Z == 0].Density
+            SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient
+            Vislam = frame.ix[frame.Z == 0]['Dynamic Viscosity']
+            VIS_T = frame.ix[frame.Z == 0]['Eddy Viscosity']
+        frame['UPLUS'] = frame.U / u_ref_cfx * np.sqrt(2 / SkinFrictionCoefficient)
+        frame['YPLUSPrime'] = RHO / Vislam * frame.Z * u_ref_cfx * np.sqrt(SkinFrictionCoefficient / 2)
+        frame['TAU'] = 0.5 * RHO * u_ref_cfx ** 2 * SkinFrictionCoefficient
 
+    # --------------------------------------------------------------------------------------------
+    #  графики для сеток с различными густотами
+    # --------------------------------------------------------------------------------------------
 
-for frame in cfx_loader.frames:
-    frame['SkinFrictionCoefficient'] = 2 * frame['X Wall Shear'] / (frame.Density * u_ref_ace ** 2)
-    if frame.ix[frame.Z == 0].__len__() == 1:
-        RHO = frame.ix[frame.Z == 0].Density[0]
-        SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient[0]
-        Vislam = frame.ix[frame.Z == 0]['Dynamic Viscosity'][0]
-        VIS_T = frame.ix[frame.Z == 0]['Eddy Viscosity'][0]
-    else:
-        RHO = frame.ix[frame.Z == 0].Density
-        SkinFrictionCoefficient = frame.ix[frame.Z == 0].SkinFrictionCoefficient
-        Vislam = frame.ix[frame.Z == 0]['Dynamic Viscosity']
-        VIS_T = frame.ix[frame.Z == 0]['Eddy Viscosity']
-    frame['UPLUS'] = frame.U / u_ref_cfx * np.sqrt(2 / SkinFrictionCoefficient)
-    frame['YPLUSPrime'] = RHO / Vislam * frame.Z * u_ref_cfx * np.sqrt(SkinFrictionCoefficient / 2)
-    frame['TAU'] = 0.5 * RHO * u_ref_cfx ** 2 * SkinFrictionCoefficient
+    # ////////////////
+    # модель Спаларта
+    # ////////////////
 
-# --------------------------------------------------------------------------------------------
-#  графики для сеток с различными густотами
-# --------------------------------------------------------------------------------------------
+    plt.figure(figsize=(8, 6))
+    plt.plot(av_grid_dens_sp_al_frames[0].U, av_grid_dens_sp_al_frames[0].Z, lw=2, color='red',
+             label=r'$Средняя\ плотность\ сетки$')
+    plt.plot(high_grid_dens_sp_al_frames[0].U, high_grid_dens_sp_al_frames[0].Z, lw=2, color='blue',
+             label=r'$Высокая\ плотность\ сетки$', linestyle='-')
+    plt.plot(very_high_grid_dens_sp_al_frames[0].U, very_high_grid_dens_sp_al_frames[0].Z, lw=2, color='green',
+             label=r'$Очень\ высокая\ плотность\ сетки$', linestyle='-')
+    plt.title(r'$Модель\ Спаларта$')
+    set_velocity_profile_plot()
+    plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_U_profile_line_0.png'))
 
-# ////////////////
-# модель Спаларта
-# ////////////////
+    plt.figure(figsize=(8, 6))
+    plt.plot(av_grid_dens_sp_al_frames[1].YPLUSPrime, av_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='red',
+             label=r'$Средняя\ плотность\ сетки$')
+    plt.plot(high_grid_dens_sp_al_frames[1].YPLUSPrime, high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$Высокая\ плотность\ сетки$')
+    plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime, very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2,
+             color='green',
+             label=r'$Очень\ высокая\ плотность\ сетки$')
+    plot_u_plus_theory()
+    plt.title(r'$Модель\ Спаларта$')
+    set_u_plus_plot()
+    plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_UPLUS_YPLUS_log_profile_line_1.png'))
 
-plt.figure(figsize=(8, 6))
-plt.plot(av_grid_dens_sp_al_frames[0].U, av_grid_dens_sp_al_frames[0].Z, lw=2, color='red',
-         label=r'$Средняя\ плотность\ сетки$')
-plt.plot(high_grid_dens_sp_al_frames[0].U, high_grid_dens_sp_al_frames[0].Z, lw=2, color='blue',
-         label=r'$Высокая\ плотность\ сетки$', linestyle='-')
-plt.plot(very_high_grid_dens_sp_al_frames[0].U, very_high_grid_dens_sp_al_frames[0].Z, lw=2, color='green',
-         label=r'$Очень\ высокая\ плотность\ сетки$', linestyle='-')
-plt.title(r'$Модель\ Спаларта$')
-set_velocity_profile_plot()
-plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_U_profile_line_0.png'))
+    plt.figure(figsize=(8, 6))
+    plt.plot(av_grid_dens_sp_al_frames[2].X, av_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2, color='red',
+             label=r'$Средняя\ плотность\ сетки$')
+    plt.plot(high_grid_dens_sp_al_frames[2].X, high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue',
+             label=r'$Высокая\ плотность\ сетки$')
+    plt.plot(very_high_grid_dens_sp_al_frames[2].X, very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
+             color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
+    plot_friction_coefficient_theory()
+    plt.title(r'$Модель\ Спаларта$')
+    set_friction_coefficient_plot()
+    plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_friction_coefficient_profile.png'))
 
+    # ////////////////
+    # модель k-e
+    # ////////////////
 
-plt.figure(figsize=(8, 6))
-plt.plot(av_grid_dens_sp_al_frames[1].YPLUSPrime, av_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='red',
-         label=r'$Средняя\ плотность\ сетки$')
-plt.plot(high_grid_dens_sp_al_frames[1].YPLUSPrime, high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$Высокая\ плотность\ сетки$')
-plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime, very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='green',
-         label=r'$Очень\ высокая\ плотность\ сетки$')
-plot_u_plus_theory()
-plt.title(r'$Модель\ Спаларта$')
-set_u_plus_plot()
-plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_UPLUS_YPLUS_log_profile_line_1.png'))
+    plt.figure(figsize=(8, 6))
+    plt.plot(high_grid_dens_k_eps_frames[0].U, high_grid_dens_k_eps_frames[0].Z, lw=2, color='blue',
+             label=r'$Высокая\ плотность\ сетки$', linestyle='-')
+    plt.plot(very_high_grid_dens_k_eps_frames[0].U, very_high_grid_dens_k_eps_frames[0].Z, lw=2, color='green',
+             label=r'$Очень\ высокая\ плотность\ сетки$', linestyle='-')
+    plt.title(r'$k-\varepsilon\ модель$')
+    set_velocity_profile_plot()
+    plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_U_profile_line_0.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(high_grid_dens_k_eps_frames[1].YPLUSPrime, high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$Высокая\ плотность\ сетки$')
+    plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime, very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2,
+             color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
+    plot_u_plus_theory()
+    plt.title(r'$k-\varepsilon\ модель$')
+    set_u_plus_plot()
+    plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_UPLUS_YPLUS_log_profile_line_1.png'))
 
-plt.figure(figsize=(8, 6))
-plt.plot(av_grid_dens_sp_al_frames[2].X, av_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2, color='red',
-         label=r'$Средняя\ плотность\ сетки$')
-plt.plot(high_grid_dens_sp_al_frames[2].X, high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2, color='blue',
-         label=r'$Высокая\ плотность\ сетки$')
-plt.plot(very_high_grid_dens_sp_al_frames[2].X, very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
-         color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
-plot_friction_coefficient_theory()
-plt.title(r'$Модель\ Спаларта$')
-set_friction_coefficient_plot()
-plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_friction_coefficient_profile.png'))
+    plt.figure(figsize=(8, 6))
+    plt.plot(high_grid_dens_k_eps_frames[2].X, high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$Высокая\ плотность\ сетки$')
+    plt.plot(very_high_grid_dens_k_eps_frames[2].X, very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
+             color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
+    plot_friction_coefficient_theory()
+    plt.title(r'$k-\varepsilon\ модель$')
+    set_friction_coefficient_plot()
+    plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_friction_coefficient_profile.png'))
 
-# ////////////////
-# модель k-e
-# ////////////////
+    # -------------------------------------------------------------------------------------------------------
+    #  графики для различных моделей турбулентности
+    # --------------------------------------------------------------------------------------------------------
 
-plt.figure(figsize=(8, 6))
-plt.plot(high_grid_dens_k_eps_frames[0].U, high_grid_dens_k_eps_frames[0].Z, lw=2, color='blue',
-         label=r'$Высокая\ плотность\ сетки$', linestyle='-')
-plt.plot(very_high_grid_dens_k_eps_frames[0].U, very_high_grid_dens_k_eps_frames[0].Z, lw=2, color='green',
-         label=r'$Очень\ высокая\ плотность\ сетки$', linestyle='-')
-plt.title(r'$k-\varepsilon\ модель$')
-set_velocity_profile_plot()
-plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_U_profile_line_0.png'))
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_sp_al_frames[0].U, very_high_grid_dens_sp_al_frames[0].Z, lw=2, color='red',
+             label=r'$Модель\ Спаларта$')
+    plt.plot(very_high_grid_dens_k_eps_frames[0].U, very_high_grid_dens_k_eps_frames[0].Z, lw=2, color='blue',
+             label=r'$k-\varepsilon\ модель$', linestyle='-')
+    plt.legend(fontsize=12)
+    set_velocity_profile_plot()
+    plt.savefig(os.path.join(plots_dir, 'turbulence_model_comparison_U_profile_line_0.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime, very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2,
+             color='red', label=r'$Модель\ Спаларта$')
+    plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime, very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2,
+             color='blue', label=r'$k-\varepsilon\ модель$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.savefig(os.path.join(plots_dir, 'turbulence_model_comparison_UPLUS_YPLUS_log_profile_line_1.png'))
 
-plt.figure(figsize=(8, 6))
-plt.plot(high_grid_dens_k_eps_frames[1].YPLUSPrime, high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$Высокая\ плотность\ сетки$')
-plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime, very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='green',
-         label=r'$Очень\ высокая\ плотность\ сетки$')
-plot_u_plus_theory()
-plt.title(r'$k-\varepsilon\ модель$')
-set_u_plus_plot()
-plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_UPLUS_YPLUS_log_profile_line_1.png'))
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_sp_al_frames[2].X, very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
+             color='red', label=r'$Модель\ Спаларта$')
+    plt.plot(very_high_grid_dens_k_eps_frames[2].X, very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$k-\varepsilon\ модель$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot()
+    plt.savefig(os.path.join(plots_dir, 'turbulence_model_comparison_friction_coefficient_profile.png'))
 
+    # ---------------------------------------------------------------------------------------------------
+    #  графики для различных функций стенки
+    # ---------------------------------------------------------------------------------------------------
 
-plt.figure(figsize=(8, 6))
-plt.plot(high_grid_dens_k_eps_frames[2].X, high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2, color='blue',
-         label=r'$Высокая\ плотность\ сетки$')
-plt.plot(very_high_grid_dens_k_eps_frames[2].X, very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
-         color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
-plot_friction_coefficient_theory()
-plt.title(r'$k-\varepsilon\ модель$')
-set_friction_coefficient_plot()
-plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_friction_coefficient_profile.png'))
+    plt.figure(figsize=(8, 6))
+    plt.plot(high_grid_dens_k_eps_two_layer_frames[1].YPLUSPrime, high_grid_dens_k_eps_two_layer_frames[1].UPLUS, lw=2,
+             color='red', label=r'$Two\ layer\ model$')
+    plt.plot(high_grid_dens_k_eps_frames[1].YPLUSPrime, high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$Standard\ wall$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.savefig(os.path.join(plots_dir, 'wall_function_comparison_UPLUS_YPLUS_log_profile_line_1.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(high_grid_dens_k_eps_two_layer_frames[2].X, high_grid_dens_k_eps_two_layer_frames[2].SkinFrictionCoefficient,
+             lw=2, color='red', label=r'$Two\ layer\ model$')
+    plt.plot(high_grid_dens_k_eps_frames[2].X, high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$Standard\ wall$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot()
+    plt.savefig(os.path.join(plots_dir, 'wall_function_comparison_friction_coefficient_profile.png'))
 
-# -------------------------------------------------------------------------------------------------------
-#  графики для различных моделей турбулентности
-# --------------------------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------
+    # графики для различных граничных условий
+    # -----------------------------------------------------------------------------------------------------------------
 
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_sp_al_frames[0].U, very_high_grid_dens_sp_al_frames[0].Z, lw=2, color='red',
-         label=r'$Модель\ Спаларта$')
-plt.plot(very_high_grid_dens_k_eps_frames[0].U, very_high_grid_dens_k_eps_frames[0].Z, lw=2, color='blue',
-         label=r'$k-\varepsilon\ модель$', linestyle='-')
-plt.legend(fontsize=12)
-set_velocity_profile_plot()
-plt.savefig(os.path.join(plots_dir, 'turbulence_model_comparison_U_profile_line_0.png'))
+    # ///////////////////////////
+    # модель Спаларта
+    # ///////////////////////////
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_sp_al_farfield_frames[1].YPLUSPrime,
+             very_high_grid_dens_sp_al_farfield_frames[1].UPLUS, lw=2,
+             color='red', label=r'$Farfield\ condition$')
+    plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime,
+             very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$Symmetry\ condition$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.title(r'$Spalart\ model$', fontsize=14)
+    plt.savefig(os.path.join(plots_dir, 'bc_comparison_sp_al_UPLUS_YPLUS_log_profile_line_1.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_sp_al_farfield_frames[2].X,
+             very_high_grid_dens_sp_al_farfield_frames[2].SkinFrictionCoefficient,
+             lw=2, color='red', label=r'$Farfield\ condition$')
+    plt.plot(very_high_grid_dens_sp_al_frames[2].X,
+             very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$Symmetry\ condition$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot(ylim=(0., 0.008))
+    plt.title(r'$Spalart\ model$', fontsize=14)
+    plt.savefig(os.path.join(plots_dir, 'bc_comparison_sp_al_friction_coefficient_profile.png'))
 
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime, very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='red',
-         label=r'$Модель\ Спаларта$')
-plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime, very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$k-\varepsilon\ модель$')
-plot_u_plus_theory()
-set_u_plus_plot()
-plt.savefig(os.path.join(plots_dir, 'turbulence_model_comparison_UPLUS_YPLUS_log_profile_line_1.png'))
+    # ///////////////////////////
+    # модель k-e, standard_wall
+    # ///////////////////////////
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_k_eps_farfield_frames[1].YPLUSPrime,
+             very_high_grid_dens_k_eps_farfield_frames[1].UPLUS, lw=2,
+             color='red', label=r'$Farfield\ condition$')
+    plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime,
+             very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$Symmetry\ condition$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.title(r'$k-\varepsilon\ model,\ standard\ wall$', fontsize=14)
+    plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_UPLUS_YPLUS_log_profile_line_1.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_k_eps_farfield_frames[2].X,
+             very_high_grid_dens_k_eps_farfield_frames[2].SkinFrictionCoefficient,
+             lw=2, color='red', label=r'$Farfield\ condition$')
+    plt.plot(very_high_grid_dens_k_eps_frames[2].X,
+             very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$Symmetry\ condition$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot(ylim=(0., 0.025))
+    plt.title(r'$k-\varepsilon\ model,\ standard\ wall$', fontsize=14)
+    plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_friction_coefficient_profile.png'))
 
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_sp_al_frames[2].X, very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
-         color='red', label=r'$Модель\ Спаларта$')
-plt.plot(very_high_grid_dens_k_eps_frames[2].X, very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
-         color='blue', label=r'$k-\varepsilon\ модель$')
-plot_friction_coefficient_theory()
-set_friction_coefficient_plot()
-plt.savefig(os.path.join(plots_dir, 'turbulence_model_comparison_friction_coefficient_profile.png'))
+    # ///////////////////////////
+    # модель k-e, two layer model
+    # ///////////////////////////
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[1].YPLUSPrime,
+             very_high_grid_dens_k_eps_two_layer_farfield_frames[1].UPLUS, lw=2,
+             color='red', label=r'$Farfield\ condition,\ very\ high\ density$')
+    plt.plot(high_grid_dens_k_eps_two_layer_frames[1].YPLUSPrime,
+             high_grid_dens_k_eps_two_layer_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$Symmetry\ condition,\ high\ density$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.title(r'$k-\varepsilon\ model,\ two\ layer\ model$', fontsize=14)
+    plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_two_layer_UPLUS_YPLUS_log_profile_line_1.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[2].X,
+             very_high_grid_dens_k_eps_two_layer_farfield_frames[2].SkinFrictionCoefficient,
+             lw=2, color='red', label=r'$Farfield\ condition,\ very\ high\ density$')
+    plt.plot(high_grid_dens_k_eps_two_layer_frames[2].X,
+             high_grid_dens_k_eps_two_layer_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$Symmetry\ condition,\ high\ density$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot(ylim=(0., 0.01))
+    plt.title(r'$k-\varepsilon\ model,\ two\ layer\ model$', fontsize=14)
+    plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_two_layer_friction_coefficient_profile.png'))
 
-# ---------------------------------------------------------------------------------------------------
-#  графики для различных функций стенки
-# ---------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------
+    #  сравнение ace и cfx
+    # ------------------------------------------------------------------------------------------------------
 
-plt.figure(figsize=(8, 6))
-plt.plot(high_grid_dens_k_eps_two_layer_frames[1].YPLUSPrime, high_grid_dens_k_eps_two_layer_frames[1].UPLUS, lw=2,
-         color='red', label=r'$Two\ layer\ model$')
-plt.plot(high_grid_dens_k_eps_frames[1].YPLUSPrime, high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$Standard\ wall$')
-plot_u_plus_theory()
-set_u_plus_plot()
-plt.savefig(os.path.join(plots_dir, 'wall_function_comparison_UPLUS_YPLUS_log_profile_line_1.png'))
+    # ///////////////////////////
+    # модель k-e
+    # ///////////////////////////
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[1].YPLUSPrime,
+             very_high_grid_dens_k_eps_two_layer_farfield_frames[1].UPLUS, lw=2,
+             color='red', label=r'$ACE-CFD,\ k-\varepsilon\ model,\ farfield\ bc$')
+    plt.plot(cfx_very_high_dens_k_eps_i1_outlet_frames[1].YPLUSPrime,
+             cfx_very_high_dens_k_eps_i1_outlet_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$CFX,\ k-\varepsilon\ model,\ outlet\ bc$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.title('1.6M cells, turbulence intensity = 1%')
+    plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_k_eps_int1_UPLUS_YPLUS_log_profile_line_1.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[2].X,
+             very_high_grid_dens_k_eps_two_layer_farfield_frames[2].SkinFrictionCoefficient,
+             lw=2, color='red', label=r'$ACE-CFD,\ k-\varepsilon\ model,\ farfield\ bc$')
+    plt.plot(cfx_very_high_dens_k_eps_i1_outlet_frames[2].X,
+             cfx_very_high_dens_k_eps_i1_outlet_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$CFX,\ k-\varepsilon\ model,\ outlet\ bc$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot(ylim=(0., 0.01))
+    plt.title('1.6M cells, turbulence intensity = 1%')
+    plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_k_eps_int1_friction_coefficient_profile.png'))
 
-plt.figure(figsize=(8, 6))
-plt.plot(high_grid_dens_k_eps_two_layer_frames[2].X, high_grid_dens_k_eps_two_layer_frames[2].SkinFrictionCoefficient,
-         lw=2, color='red', label=r'$Two\ layer\ model$')
-plt.plot(high_grid_dens_k_eps_frames[2].X, high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
-         color='blue', label=r'$Standard\ wall$')
-plot_friction_coefficient_theory()
-set_friction_coefficient_plot()
-plt.savefig(os.path.join(plots_dir, 'wall_function_comparison_friction_coefficient_profile.png'))
+    # /////////////////////////////////////////////
+    # сетка с малым колическтвом ячеек
+    # //////////////////////////////////////////////
+    plt.figure(figsize=(8, 6))
+    plt.plot(av_grid_dens_sp_al_frames[1].YPLUSPrime,
+             av_grid_dens_sp_al_frames[1].UPLUS, lw=2,
+             color='red', label=r'$ACE-CFD,\ Spalart\ model$')
+    plt.plot(cfx_average_dens_k_eps_i1_outlet_frames[1].YPLUSPrime,
+             cfx_average_dens_k_eps_i1_outlet_frames[1].UPLUS, lw=2, color='blue',
+             label=r'$CFX,\ k-\varepsilon\ model$')
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.title('1.0M cells, turbulence intensity = 1%')
+    plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_av_dens_int1_UPLUS_YPLUS_log_profile_line_1.png'))
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(av_grid_dens_sp_al_frames[2].X,
+             av_grid_dens_sp_al_frames[2].SkinFrictionCoefficient,
+             lw=2, color='red', label=r'$ACE-CFD,\ Spalart\ model$')
+    plt.plot(cfx_average_dens_k_eps_i1_outlet_frames[2].X,
+             cfx_average_dens_k_eps_i1_outlet_frames[2].SkinFrictionCoefficient, lw=2,
+             color='blue', label=r'$CFX,\ k-\varepsilon\ model$')
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot(ylim=(0., 0.03))
+    plt.title('1.0M cells, turbulence intensity = 1%')
+    plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_av_dens_int1_friction_coefficient_profile.png'))
 
-# -----------------------------------------------------------------------------------------------------------------
-# графики для различных граничных условий
-# -----------------------------------------------------------------------------------------------------------------
-
-# ///////////////////////////
-# модель Спаларта
-# ///////////////////////////
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_sp_al_farfield_frames[1].YPLUSPrime,
-         very_high_grid_dens_sp_al_farfield_frames[1].UPLUS, lw=2,
-         color='red', label=r'$Farfield\ condition$')
-plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime,
-         very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$Symmetry\ condition$')
-plot_u_plus_theory()
-set_u_plus_plot()
-plt.title(r'$Spalart\ model$', fontsize=14)
-plt.savefig(os.path.join(plots_dir, 'bc_comparison_sp_al_UPLUS_YPLUS_log_profile_line_1.png'))
-
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_sp_al_farfield_frames[2].X,
-         very_high_grid_dens_sp_al_farfield_frames[2].SkinFrictionCoefficient,
-         lw=2, color='red', label=r'$Farfield\ condition$')
-plt.plot(very_high_grid_dens_sp_al_frames[2].X,
-         very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
-         color='blue', label=r'$Symmetry\ condition$')
-plot_friction_coefficient_theory()
-set_friction_coefficient_plot(ylim=(0., 0.008))
-plt.title(r'$Spalart\ model$', fontsize=14)
-plt.savefig(os.path.join(plots_dir, 'bc_comparison_sp_al_friction_coefficient_profile.png'))
-
-# ///////////////////////////
-# модель k-e, standard_wall
-# ///////////////////////////
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_k_eps_farfield_frames[1].YPLUSPrime,
-         very_high_grid_dens_k_eps_farfield_frames[1].UPLUS, lw=2,
-         color='red', label=r'$Farfield\ condition$')
-plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime,
-         very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$Symmetry\ condition$')
-plot_u_plus_theory()
-set_u_plus_plot()
-plt.title(r'$k-\varepsilon\ model,\ standard\ wall$', fontsize=14)
-plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_UPLUS_YPLUS_log_profile_line_1.png'))
-
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_k_eps_farfield_frames[2].X,
-         very_high_grid_dens_k_eps_farfield_frames[2].SkinFrictionCoefficient,
-         lw=2, color='red', label=r'$Farfield\ condition$')
-plt.plot(very_high_grid_dens_k_eps_frames[2].X,
-         very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
-         color='blue', label=r'$Symmetry\ condition$')
-plot_friction_coefficient_theory()
-set_friction_coefficient_plot(ylim=(0., 0.025))
-plt.title(r'$k-\varepsilon\ model,\ standard\ wall$', fontsize=14)
-plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_friction_coefficient_profile.png'))
-
-# ///////////////////////////
-# модель k-e, two layer model
-# ///////////////////////////
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[1].YPLUSPrime,
-         very_high_grid_dens_k_eps_two_layer_farfield_frames[1].UPLUS, lw=2,
-         color='red', label=r'$Farfield\ condition,\ very\ high\ density$')
-plt.plot(high_grid_dens_k_eps_two_layer_frames[1].YPLUSPrime,
-         high_grid_dens_k_eps_two_layer_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$Symmetry\ condition,\ high\ density$')
-plot_u_plus_theory()
-set_u_plus_plot()
-plt.title(r'$k-\varepsilon\ model,\ two\ layer\ model$', fontsize=14)
-plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_two_layer_UPLUS_YPLUS_log_profile_line_1.png'))
-
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[2].X,
-         very_high_grid_dens_k_eps_two_layer_farfield_frames[2].SkinFrictionCoefficient,
-         lw=2, color='red', label=r'$Farfield\ condition,\ very\ high\ density$')
-plt.plot(high_grid_dens_k_eps_two_layer_frames[2].X,
-         high_grid_dens_k_eps_two_layer_frames[2].SkinFrictionCoefficient, lw=2,
-         color='blue', label=r'$Symmetry\ condition,\ high\ density$')
-plot_friction_coefficient_theory()
-set_friction_coefficient_plot(ylim=(0., 0.01))
-plt.title(r'$k-\varepsilon\ model,\ two\ layer\ model$', fontsize=14)
-plt.savefig(os.path.join(plots_dir, 'bc_comparison_k_eps_two_layer_friction_coefficient_profile.png'))
-
-
-# ------------------------------------------------------------------------------------------------------
-#  сравнение ace и cfx
-# ------------------------------------------------------------------------------------------------------
-
-# ///////////////////////////
-# модель k-e
-# ///////////////////////////
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[1].YPLUSPrime,
-         very_high_grid_dens_k_eps_two_layer_farfield_frames[1].UPLUS, lw=2,
-         color='red', label=r'$ACE-CFD,\ k-\varepsilon\ model,\ farfield\ bc$')
-plt.plot(cfx_very_high_dens_k_eps_i1_outlet_frames[1].YPLUSPrime,
-         cfx_very_high_dens_k_eps_i1_outlet_frames[1].UPLUS, lw=2, color='blue',
-         label=r'$CFX,\ k-\varepsilon\ model,\ outlet\ bc$')
-plot_u_plus_theory()
-set_u_plus_plot()
-plt.title('1.6M cells, turbulence intensity = 10%')
-plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_k_eps_int1_UPLUS_YPLUS_log_profile_line_1.png'))
-
-plt.figure(figsize=(8, 6))
-plt.plot(very_high_grid_dens_k_eps_two_layer_farfield_frames[2].X,
-         very_high_grid_dens_k_eps_two_layer_farfield_frames[2].SkinFrictionCoefficient,
-         lw=2, color='red', label=r'$ACE-CFD,\ k-\varepsilon\ model,\ farfield\ bc$')
-plt.plot(cfx_very_high_dens_k_eps_i1_outlet_frames[2].X,
-         cfx_very_high_dens_k_eps_i1_outlet_frames[2].SkinFrictionCoefficient, lw=2,
-         color='blue', label=r'$CFX,\ k-\varepsilon\ model,\ outlet\ bc$')
-plot_friction_coefficient_theory()
-set_friction_coefficient_plot(ylim=(0., 0.01))
-plt.title('1.6M cells, turbulence intensity = 10%')
-plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_k_eps_int1_friction_coefficient_profile.png'))
-
-plt.show()
+    plt.show()
