@@ -4,6 +4,8 @@ import numpy as np
 import os
 from scipy.optimize import fsolve
 
+report_pic_dir = 'pictures_for_report'
+
 cfx_loader = LineDataLoader(r'extracted_data\cfx')
 cfx_loader.load()
 
@@ -422,5 +424,18 @@ if __name__ == '__main__':
     set_friction_coefficient_plot(ylim=(0., 0.03))
     plt.title('1.0M cells, turbulence intensity = 1%')
     plt.savefig(os.path.join(plots_dir, 'ace_cfx_comparison_av_dens_int1_friction_coefficient_profile.png'))
+
+    # --------------------------------------------------------------------------------
+    #   графики для отчета
+    # --------------------------------------------------------------------------------
+    plt.figure(figsize=(8, 6))
+    plot_u_plus_theory()
+    set_u_plus_plot()
+    plt.savefig(os.path.join(report_pic_dir, 'u_plus_theory_plot.png'))
+
+    plt.figure(figsize=(8, 6))
+    plot_friction_coefficient_theory()
+    set_friction_coefficient_plot(ylim=(0., 0.008))
+    plt.savefig(os.path.join(report_pic_dir, 'friction_coefficient_theory'))
 
     plt.show()

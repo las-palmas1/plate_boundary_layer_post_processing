@@ -29,6 +29,9 @@ axis_settings = tecplot_lib.AxisSettings(x_axis_var=22, y_axis_var=24, rect=(10,
                                          x_title_offset=5, y_title_font=y_title_font, y_label_font=y_label_font,
                                          y_title_offset=5, xlim=(-0.1, 8.1), ylim=(-0.05, 0.4))
 
+frame_settings = tecplot_lib.FrameSettings()
+ticks_settings = tecplot_lib.TicksSettings()
+
 if __name__ == '__main__':
     file_for_picture = os.path.join(data_files_dir, 'average_grid_density_sp_al.lay')
     macro_name = os.path.join(cwd, 'macros', 'picture_creation2.mcr')
@@ -36,5 +39,6 @@ if __name__ == '__main__':
                                                  macro_filename=macro_name,
                                                  slice_settings=slice_settings, level_settings=level_settings,
                                                  legend_settings=legend_settings, colormap_settings=colormap_settings,
-                                                 axis_settings=axis_settings, export_settings=export_settings)
+                                                 axis_settings=axis_settings, export_settings=export_settings,
+                                                 frame_settings=frame_settings, ticks_settings=ticks_settings)
     picture_creator.run_creation()
