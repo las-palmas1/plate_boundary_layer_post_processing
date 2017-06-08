@@ -161,23 +161,23 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 6))
     plt.plot(av_grid_dens_sp_al_frames[0].U, av_grid_dens_sp_al_frames[0].Z, lw=2, color='red',
-             label=r'$Средняя\ плотность\ сетки$')
+             label=r'$1.0 \cdot 10^6\ ячеек$')
     plt.plot(high_grid_dens_sp_al_frames[0].U, high_grid_dens_sp_al_frames[0].Z, lw=2, color='blue',
-             label=r'$Высокая\ плотность\ сетки$', linestyle='-')
+             label=r'$1.2 \cdot 10^6\ ячеек$', linestyle='-')
     plt.plot(very_high_grid_dens_sp_al_frames[0].U, very_high_grid_dens_sp_al_frames[0].Z, lw=2, color='green',
-             label=r'$Очень\ высокая\ плотность\ сетки$', linestyle='-')
+             label=r'$1.6 \cdot 10^6\ ячеек$', linestyle='-')
     plt.title(r'$Модель\ Спаларта$')
     set_velocity_profile_plot()
     plt.savefig(os.path.join(plots_dir, 'density_comparison_sp_al_U_profile_line_0.png'))
 
     plt.figure(figsize=(8, 6))
     plt.plot(av_grid_dens_sp_al_frames[1].YPLUSPrime, av_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='red',
-             label=r'$Средняя\ плотность\ сетки$')
+             label=r'$1.0 \cdot 10^6\ ячеек$')
     plt.plot(high_grid_dens_sp_al_frames[1].YPLUSPrime, high_grid_dens_sp_al_frames[1].UPLUS, lw=2, color='blue',
-             label=r'$Высокая\ плотность\ сетки$')
+             label=r'$1.2 \cdot 10^6\ ячеек$')
     plt.plot(very_high_grid_dens_sp_al_frames[1].YPLUSPrime, very_high_grid_dens_sp_al_frames[1].UPLUS, lw=2,
              color='green',
-             label=r'$Очень\ высокая\ плотность\ сетки$')
+             label=r'$1.6 \cdot 10^6\ ячеек$')
     plot_u_plus_theory()
     plt.title(r'$Модель\ Спаларта$')
     set_u_plus_plot()
@@ -185,12 +185,12 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 6))
     plt.plot(av_grid_dens_sp_al_frames[2].X, av_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2, color='red',
-             label=r'$Средняя\ плотность\ сетки$')
+             label=r'$1 \cdot 10^6\ ячеек$')
     plt.plot(high_grid_dens_sp_al_frames[2].X, high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
              color='blue',
-             label=r'$Высокая\ плотность\ сетки$')
+             label=r'$1.2 \cdot 10^6\ ячеек$')
     plt.plot(very_high_grid_dens_sp_al_frames[2].X, very_high_grid_dens_sp_al_frames[2].SkinFrictionCoefficient, lw=2,
-             color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
+             color='green', label=r'$1.6 \cdot 10^6\ ячеек$')
     plot_friction_coefficient_theory()
     plt.title(r'$Модель\ Спаларта$')
     set_friction_coefficient_plot()
@@ -202,18 +202,18 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 6))
     plt.plot(high_grid_dens_k_eps_frames[0].U, high_grid_dens_k_eps_frames[0].Z, lw=2, color='blue',
-             label=r'$Высокая\ плотность\ сетки$', linestyle='-')
+             label=r'$1.2 \cdot 10^6\ ячеек$', linestyle='-')
     plt.plot(very_high_grid_dens_k_eps_frames[0].U, very_high_grid_dens_k_eps_frames[0].Z, lw=2, color='green',
-             label=r'$Очень\ высокая\ плотность\ сетки$', linestyle='-')
+             label=r'$1.6 \cdot 10^6\ ячеек$', linestyle='-')
     plt.title(r'$k-\varepsilon\ модель$')
     set_velocity_profile_plot()
     plt.savefig(os.path.join(plots_dir, 'density_comparison_k_eps_U_profile_line_0.png'))
 
     plt.figure(figsize=(8, 6))
     plt.plot(high_grid_dens_k_eps_frames[1].YPLUSPrime, high_grid_dens_k_eps_frames[1].UPLUS, lw=2, color='blue',
-             label=r'$Высокая\ плотность\ сетки$')
+             label=r'$1.2 \cdot 10^6\ ячеек$')
     plt.plot(very_high_grid_dens_k_eps_frames[1].YPLUSPrime, very_high_grid_dens_k_eps_frames[1].UPLUS, lw=2,
-             color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
+             color='green', label=r'$1.6 \cdot 10^6\ ячеек$')
     plot_u_plus_theory()
     plt.title(r'$k-\varepsilon\ модель$')
     set_u_plus_plot()
@@ -221,9 +221,9 @@ if __name__ == '__main__':
 
     plt.figure(figsize=(8, 6))
     plt.plot(high_grid_dens_k_eps_frames[2].X, high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
-             color='blue', label=r'$Высокая\ плотность\ сетки$')
+             color='blue', label=r'$1.2 \cdot 10^6\ ячеек$')
     plt.plot(very_high_grid_dens_k_eps_frames[2].X, very_high_grid_dens_k_eps_frames[2].SkinFrictionCoefficient, lw=2,
-             color='green', label=r'$Очень\ высокая\ плотность\ сетки$')
+             color='green', label=r'$1.6 \cdot 10^6\ ячеек$')
     plot_friction_coefficient_theory()
     plt.title(r'$k-\varepsilon\ модель$')
     set_friction_coefficient_plot()
